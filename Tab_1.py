@@ -2,143 +2,107 @@ import streamlit as st
 import time
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="HealthConnect | Agentic TPA", layout="wide", page_icon="🏥")
+st.set_page_config(page_title="HealthConnect | Multi-Persona TPA", layout="wide", page_icon="🏥")
 
-# --- CUSTOM CSS FOR BETTER UI ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    .patient-card {
-        background-color: #f0f2f6;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 5px solid #ff4b4b;
-        margin-bottom: 20px;
-    }
-    .metric-value { font-size: 1.5rem; font-weight: bold; color: #1f77b4; }
+    .patient-card { background-color: #f0f2f6; padding: 20px; border-radius: 10px; border-left: 5px solid #ff4b4b; margin-bottom: 20px; }
+    .nav-header { font-size: 1.2rem; color: #666; padding-bottom: 10px; border-bottom: 1px solid #ddd; margin-bottom: 20px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- SESSION STATE INITIALIZATION ---
-# This keeps memory of actions while the user clicks around
-if "case_initiated" not in st.session_state:
-    st.session_state.case_initiated = False
+# --- GLOBAL SESSION STATE ---
+# This allows data to flow seamlessly between the different user logins
+if "case_status" not in st.session_state:
+    st.session_state.case_status = "Not Initiated" # Can be: Not Initiated, Active, Pending Discharge, Approved
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [
-        {"role": "assistant", "content": "👋 Hi Rahul! I am your HealthConnect AI. Ask me anything about your Star Health policy coverage before you book your surgery."}
-    ]
+    st.session_state.chat_history = [{"role": "assistant", "content": "👋 Hi Rahul! Ask me anything about your Star Health policy coverage before booking."}]
 
-# --- SIDEBAR (Global Demo Settings) ---
+# ==========================================
+# SIDEBAR: THE LOGIN SIMULATOR
+# ==========================================
 with st.sidebar:
+    st.title("🔐 Platform Login")
+    st.write("Simulate the end-to-end journey by logging in as different users.")
+    
+    # THE PERSONA SWITCHER
+    active_persona = st.radio(
+        "Select User Persona:",
+        [
+            "📱 Patient App (Rahul)", 
+            "🩺 Doctor Portal (Dr. Gupta)", 
+            "🤖 Agent Backend (System View)", 
+            "🏢 TPA Dashboard (Insurer)"
+        ]
+    )
+    
+    st.markdown("---")
     st.title("⚙️ Demo Controls")
-    app_mode = st.radio("Application Mode:", ["Sample Mode (Recruiter Safe)", "Live API Mode (Interview)"])
+    app_mode = st.radio("Mode:", ["Sample Mode (Fast)", "Live API Mode"])
     st.markdown("---")
-    st.markdown("**Current Patient:** Mr. Rahul Sharma")
-    st.markdown("**Insurer:** Star Health (Policy: #SH-8821)")
-    st.markdown("---")
-    st.markdown("**Built by:** Rajatbhai Vaghela (Product Manager)")
-
-# --- APP HEADER ---
-st.title("🏥 HealthConnect")
-st.markdown("### Eliminating the 8-hour discharge delay with Agentic AI.")
-
-# --- TABS ---
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📱 1. Patient App (Booking)", 
-    "🩺 2. Doctor Desk", 
-    "🤖 3. The Agentic Brain", 
-    "✅ 4. TPA Officer"
-])
+    st.caption("Project by: Rajatbhai Vaghela (Product Manager)")
 
 # ==========================================
-# TAB 1: PATIENT DISCOVERY & BOOKING
+# PERSONA 1: PATIENT APP
 # ==========================================
-with tab1:
-    st.header("Step 1: Patient Discovery & Pre-Verification")
-    st.write("Patients verify their policy via AI *before* admission, preventing surprises and saving hours of TPA queries later.")
-    st.markdown("---")
-
-    # Split into two columns: Left for Booking, Right for AI Chat
+def render_patient_app():
+    st.markdown('<div class="nav-header">📱 HealthConnect Patient App | Welcome, Rahul</div>', unsafe_allow_html=True)
+    st.title("Your Health Journey")
+    
     col1, col2 = st.columns([1, 1.2], gap="large")
 
-    # --- LEFT COLUMN: PATIENT PROFILE & BOOKING ---
     with col1:
-        st.subheader("👤 Patient Profile")
-        
-        # HTML/CSS Card for visual appeal
+        st.subheader("My Insurance Profile")
         st.markdown("""
             <div class="patient-card">
-                <h4>Rahul Sharma (Age: 58)</h4>
-                <p><b>Policy:</b> Star Health Comprehensive Health Insurance<br>
+                <h4>Star Health Comprehensive</h4>
+                <p><b>Policy Number:</b> #SH-8821<br>
                 <b>Sum Insured:</b> ₹5,00,000<br>
-                <b>Waiting Period:</b> Cleared (Active since 2018)</p>
+                <b>Status:</b> Active (Waiting periods cleared)</p>
             </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("🏥 Initiate New Case")
-        hospital = st.selectbox("Select Hospital/Provider", ["Apollo Hospitals, Greams Road", "Fortis Healthcare", "Max Super Speciality"])
-        surgery_type = st.selectbox("Planned Procedure", ["Total Knee Replacement (TKR)", "Cataract Surgery", "Cardiac Bypass"])
-        date = st.date_input("Planned Admission Date")
+        st.subheader("Plan a Hospital Visit")
+        hospital = st.selectbox("Select Hospital", ["Apollo Hospitals, Greams Road", "Fortis Healthcare"])
+        surgery_type = st.selectbox("Procedure", ["Total Knee Replacement (TKR)", "Cataract Surgery"])
+        date = st.date_input("Admission Date")
 
-        # Action Button
-        if not st.session_state.case_initiated:
-            if st.button("🚀 Initiate Case & Create Digital Avatar", use_container_width=True, type="primary"):
-                with st.spinner("Creating Live Case File & Syncing Policy Data..."):
-                    time.sleep(1.5) # Simulate processing
-                    st.session_state.case_initiated = True
+        if st.session_state.case_status == "Not Initiated":
+            if st.button("🚀 Initiate Case & Book Slot", use_container_width=True, type="primary"):
+                with st.spinner("Creating Digital Case File..."):
+                    time.sleep(1.5)
+                    st.session_state.case_status = "Active"
                     st.rerun()
         else:
-            st.success("✅ Digital Case File Active! Data is now bridging to the Doctor's Desk.")
-            st.info("👉 *Recruiter Note: The journey now moves to Tab 2 (Doctor Desk).*")
+            st.success(f"✅ Case Initiated for {surgery_type} at {hospital}.")
+            st.info("👉 Switch to **Doctor Portal** in the sidebar to continue the journey.")
 
-    # --- RIGHT COLUMN: RAG AI CHATBOT ---
     with col2:
-        st.subheader("🤖 Policy Pre-Check AI (RAG)")
-        st.write("Querying: `Star_Health_Policy_Document.pdf`")
-        
-        # Chat Interface Container
+        st.subheader("🤖 Policy Pre-Check AI")
         chat_container = st.container(height=350, border=True)
         
-        # Display Chat History
         with chat_container:
             for message in st.session_state.chat_history:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
 
-        # Suggested Questions (Recruiter Friendly)
-        st.write("💡 **Suggested Queries (Click to test):**")
         s_col1, s_col2 = st.columns(2)
-        
-        # Logic for suggested buttons or manual text input
         user_input = None
-        if s_col1.button("Is Knee Replacement covered?"):
-            user_input = "Is Total Knee Replacement covered, and what is the room rent limit?"
-        if s_col2.button("Are consumables covered?"):
-            user_input = "Will the insurance pay for surgical consumables like gloves?"
+        if s_col1.button("Is Knee Replacement covered?"): user_input = "Is Total Knee Replacement covered, and what is the room rent limit?"
+        if s_col2.button("Are consumables covered?"): user_input = "Will the insurance pay for surgical consumables?"
 
-        manual_input = st.chat_input("Or type your own question...")
-        if manual_input:
-            user_input = manual_input
+        manual_input = st.chat_input("Ask your policy AI...")
+        if manual_input: user_input = manual_input
 
-        # Process the input
         if user_input:
-            # Add user message to state
             st.session_state.chat_history.append({"role": "user", "content": user_input})
-            
-            # Display user message instantly
             with chat_container:
-                with st.chat_message("user"):
-                    st.markdown(user_input)
-                
-                # Simulate AI Thinking & Responding
+                with st.chat_message("user"): st.markdown(user_input)
                 with st.chat_message("assistant"):
                     message_placeholder = st.empty()
-                    # Hardcoded "Sample Mode" responses based on keywords
-                    if "consumables" in user_input.lower():
-                        ai_response = "⚠️ **Warning:** Under Star Health Clause 5.1, non-medical consumables (e.g., gloves, masks, specific syringes) are **Not Payable**. You will need to pay for these out-of-pocket."
-                    else:
-                        ai_response = "🟢 **Yes!** Total Knee Replacement is fully covered. Since your Sum Insured is ₹5L, your **Room Rent limit is 1% (₹5,000/day)**. There are no active waiting periods for this procedure."
+                    ai_response = "⚠️ **Warning:** Consumables are **Not Payable**." if "consumables" in user_input.lower() else "🟢 **Yes!** Total Knee Replacement is fully covered. Room Rent limit is ₹5,000/day."
                     
-                    # Typing effect
                     full_response = ""
                     for chunk in ai_response.split():
                         full_response += chunk + " "
@@ -146,11 +110,46 @@ with tab1:
                         message_placeholder.markdown(full_response + "▌")
                     message_placeholder.markdown(full_response)
             
-            # Save AI response to state
             st.session_state.chat_history.append({"role": "assistant", "content": ai_response})
             st.rerun()
 
-# Placeholders for the other tabs so the app doesn't break
-with tab2: st.write("Tab 2 UI coming soon...")
-with tab3: st.write("Tab 3 UI coming soon...")
-with tab4: st.write("Tab 4 UI coming soon...")
+# ==========================================
+# PERSONA 2: DOCTOR PORTAL
+# ==========================================
+def render_doctor_app():
+    st.markdown('<div class="nav-header">🩺 Apollo Hospitals Clinical Portal | Dr. Gupta (Orthopedics)</div>', unsafe_allow_html=True)
+    
+    if st.session_state.case_status == "Not Initiated":
+        st.warning("📭 No active cases right now. (Go to the Patient App to initiate a case first).")
+    else:
+        st.title("Live Case: Rahul Sharma")
+        st.write("This is where the Doctor or Clinical Assistant will input data digitally.")
+        st.info("We will build the Voice-to-Text and OCR upload UI here next.")
+
+# ==========================================
+# PERSONA 3: SYSTEM ADMIN / AGENT BACKEND
+# ==========================================
+def render_agent_backend():
+    st.markdown('<div class="nav-header">🤖 HealthConnect Agentic Orchestration Logs</div>', unsafe_allow_html=True)
+    st.title("AI Processing Engine")
+    st.write("This screen shows the multi-agent system cross-referencing clinical notes with the policy PDF.")
+
+# ==========================================
+# PERSONA 4: TPA DASHBOARD
+# ==========================================
+def render_tpa_app():
+    st.markdown('<div class="nav-header">🏢 Star Health TPA Command Center | Officer Desk</div>', unsafe_allow_html=True)
+    st.title("Claims Verification Queue")
+    st.write("This is where the 8-hour wait becomes a 30-minute approval via the Verified AI Dossier.")
+
+# ==========================================
+# ROUTING LOGIC
+# ==========================================
+if active_persona == "📱 Patient App (Rahul)":
+    render_patient_app()
+elif active_persona == "🩺 Doctor Portal (Dr. Gupta)":
+    render_doctor_app()
+elif active_persona == "🤖 Agent Backend (System View)":
+    render_agent_backend()
+elif active_persona == "🏢 TPA Dashboard (Insurer)":
+    render_tpa_app()
