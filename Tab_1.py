@@ -2,142 +2,165 @@ import streamlit as st
 import time
 from datetime import date
 import uuid
+import pandas as pd
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="HealthConnect | Multi-Persona TPA", layout="wide", page_icon="🏥")
+st.set_page_config(page_title="HealthConnect | Agentic Ecosystem", layout="wide", page_icon="🏥")
 
-# --- CUSTOM CSS ---
+# --- ADVANCED CUSTOM CSS ---
 st.markdown("""
     <style>
+    .main-header { font-size: 2rem; font-weight: 700; color: #1E3A8A; margin-bottom: 20px; }
     .stCard { background-color: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #e0e0e0; }
-    .kpi-card { background: linear-gradient(135deg, #fdfbfb, #ebedee); padding: 15px; border-radius: 10px; border-left: 5px solid #2ecc71; text-align: center; }
-    .kpi-value { font-size: 2rem; font-weight: bold; color: #2c3e50; margin: 0; }
-    .kpi-label { font-size: 0.9rem; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
-    .ai-alert { background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; border-radius: 5px; margin-top: 10px;}
+    .kpi-card { background: white; padding: 20px; border-radius: 10px; border-top: 5px solid #3B82F6; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .kpi-value { font-size: 2.2rem; font-weight: bold; color: #1E3A8A; margin: 0; }
+    .kpi-label { font-size: 0.8rem; color: #64748B; text-transform: uppercase; font-weight: 600; }
+    .ai-box { background-color: #F8FAFC; border: 1px dashed #3B82F6; padding: 15px; border-radius: 10px; margin-top: 10px; }
+    .blog-card { background: #EFF6FF; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #3B82F6; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- SESSION STATE ---
-if "logged_in_user" not in st.session_state: st.session_state.logged_in_user = "Doctor Portal (Dr. Gupta)"
-if "doc_voice_text" not in st.session_state: st.session_state.doc_voice_text = ""
-if "case_status_rahul" not in st.session_state: st.session_state.case_status_rahul = "In Waiting Room"
-if "ai_justification_needed" not in st.session_state: st.session_state.ai_justification_needed = False
+# --- SESSION STATE INITIALIZATION ---
+if "logged_in_user" not in st.session_state: st.session_state.logged_in_user = "Patient App (Rahul)"
+if "case_status" not in st.session_state: st.session_state.case_status = "Active"
+if "appointments" not in st.session_state: st.session_state.appointments = []
+if "doc_notes" not in st.session_state: st.session_state.doc_notes = ""
+if "ai_processed" not in st.session_state: st.session_state.ai_processed = False
+
+# --- DUMMY DATA FOR DASHBOARD INTERACTIVITY ---
+DASHBOARD_STATS = {
+    "Today": {"total": 12, "pending": 3, "attended": 9, "claims": 1},
+    "This Week": {"total": 84, "pending": 12, "attended": 72, "claims": 8},
+    "This Month": {"total": 320, "pending": 45, "attended": 275, "claims": 32}
+}
 
 # ==========================================
-# SIDEBAR / LOGIN MANAGER
+# SHARED SIDEBAR NAVIGATION
 # ==========================================
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2966/2966327.png", width=50)
+    st.image("https://cdn-icons-png.flaticon.com/512/2966/2966327.png", width=60)
     st.title("HealthConnect")
-    st.info(f"🟢 **Logged in as:** \n\n{st.session_state.logged_in_user}")
-    with st.expander("🔄 Switch Persona"):
-        new_user = st.radio("Select Persona:", ["Patient App (Rahul)", "Doctor Portal (Dr. Gupta)", "TPA Dashboard (Insurer)"])
-        if st.button("Switch"):
-            st.session_state.logged_in_user = new_user
+    st.write(f"Logged in: **{st.session_state.logged_in_user}**")
+    
+    with st.expander("🔄 Switch Platform Access"):
+        target = st.radio("Switch to:", ["Patient App (Rahul)", "Doctor Portal (Dr. Gupta)", "TPA Dashboard (Insurer)"])
+        if st.button("Confirm Switch"):
+            st.session_state.logged_in_user = target
             st.rerun()
+    
+    st.markdown("---")
+    st.caption("AI-Powered Claims Pre-Auth Platform")
 
 # ==========================================
-# PERSONA 2: DOCTOR PORTAL
+# PERSONA 1: PATIENT APP UI
+# ==========================================
+def render_patient_app():
+    st.markdown("<div class='main-header'>👋 Welcome back, Rahul!</div>", unsafe_allow_html=True)
+    
+    p_tab1, p_tab2, p_tab3 = st.tabs(["🏥 Dashboard & Booking", "📂 Records Vault", "🛡️ AI Policy Chat"])
+    
+    with p_tab1:
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            st.subheader("Daily Health Insights")
+            st.markdown("""<div class='blog-card'><b>Managing Knee Pain</b><br><small>3 exercises to do at home.</small></div>""", unsafe_allow_html=True)
+            st.markdown("""<div class='blog-card'><b>Heart Health</b><br><small>Why walking 10k steps matters.</small></div>""", unsafe_allow_html=True)
+        
+        with c2:
+            st.subheader("Book Appointment")
+            with st.container(border=True):
+                city = st.selectbox("City", ["Delhi", "Mumbai", "Bangalore"])
+                hosp = st.selectbox("Hospital", ["Apollo", "Fortis", "Max"])
+                doc = st.selectbox("Doctor", ["Dr. Gupta (Ortho)", "Dr. Verma (Cardio)"])
+                if st.button("Confirm Appointment", type="primary"):
+                    st.success(f"Confirmed with {doc} at {hosp}!")
+
+    with p_tab2:
+        st.subheader("Clinical History")
+        st.info("No documents uploaded yet. Start by creating a folder.")
+        
+    with p_tab3:
+        st.subheader("Insurance Assistant")
+        st.chat_input("Ask about your coverage...")
+
+# ==========================================
+# PERSONA 2: DOCTOR PORTAL UI
 # ==========================================
 def render_doctor_app():
-    # --- HEADER & KPIs ---
+    # 1. INTERACTIVE HEADER & FILTERS
     col_h1, col_h2 = st.columns([3, 1])
-    with col_h1: st.markdown("<h2>🩺 Apollo Clinical Dashboard | Dr. A. Gupta (Orthopedics)</h2>", unsafe_allow_html=True)
+    with col_h1: st.markdown("<div class='main-header'>🩺 Physician Command Center</div>", unsafe_allow_html=True)
     with col_h2: 
-        period = st.selectbox("📅 Filter Period", ["Today", "This Week", "This Month"])
-
-    st.markdown("<hr style='margin-top: 0px;'>", unsafe_allow_html=True)
-
-    # DYNAMIC KPI DASHBOARD
-    k1, k2, k3, k4 = st.columns(4)
-    with k1: st.markdown("<div class='kpi-card'><p class='kpi-value'>12</p><p class='kpi-label'>Appointments</p></div>", unsafe_allow_html=True)
-    with k2: st.markdown("<div class='kpi-card'><p class='kpi-value'>4</p><p class='kpi-label'>Attended</p></div>", unsafe_allow_html=True)
-    with k3: st.markdown("<div class='kpi-card' style='border-left-color: #f39c12;'><p class='kpi-value'>3</p><p class='kpi-label'>Pending Lab Results</p></div>", unsafe_allow_html=True)
-    with k4: st.markdown("<div class='kpi-card' style='border-left-color: #e74c3c;'><p class='kpi-value'>1</p><p class='kpi-label'>Discharge Blocked (TPA)</p></div>", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --- ACTIVE PATIENT QUEUE ---
-    st.markdown("### 👥 Active Patient Queue")
+        filter_val = st.selectbox("📊 Dashboard View", ["Today", "This Week", "This Month"])
     
-    # Patient 1: The Case we created in Tab 1
-    with st.expander(f"🟢 10:00 AM | Rahul Sharma (Age: 58) | Status: {st.session_state.case_status_rahul}", expanded=True):
-        
-        # Split into Patient Context (Left) and Clinical Input (Right)
-        c_left, c_right = st.columns([1, 1.5], gap="large")
-        
-        with c_left:
-            st.markdown("#### 📋 Patient Context")
-            st.write("**Reason for visit:** Case #882 - Chronic Knee Pain")
-            st.write("**Vitals:** BP 130/85 | Temp 98.6°F | Wt 82kg")
-            
-            st.markdown("**Previous History (Auto-Synced via AI Vault):**")
-            st.info("📄 MRI Report (Oct 12): Grade 3 Osteoarthritis \n\n💊 Current Meds: Paracetamol 500mg")
-            
-            st.markdown("**Insurance Coverage:**")
-            st.success("Star Health Comprehensive (₹5,00,000) - TKR Covered.")
+    # 2. DYNAMIC KPIs (These change based on filter_val)
+    stats = DASHBOARD_STATS[filter_val]
+    k1, k2, k3, k4 = st.columns(4)
+    with k1: st.markdown(f"<div class='kpi-card'><p class='kpi-value'>{stats['total']}</p><p class='kpi-label'>Total Patients</p></div>", unsafe_allow_html=True)
+    with k2: st.markdown(f"<div class='kpi-card'><p class='kpi-value'>{stats['attended']}</p><p class='kpi-label'>Attended</p></div>", unsafe_allow_html=True)
+    with k3: st.markdown(f"<div class='kpi-card'><p class='kpi-value'>{stats['pending']}</p><p class='kpi-label'>Pending</p></div>", unsafe_allow_html=True)
+    with k4: st.markdown(f"<div class='kpi-card'><p class='kpi-value'>{stats['claims']}</p><p class='kpi-label'>TPA Flags</p></div>", unsafe_allow_html=True)
 
-        with c_right:
-            st.markdown("#### ✍️ Clinical Encounter Entry")
+    st.markdown("### 📋 Active Consultation")
+    
+    with st.container(border=True):
+        st.write("**Patient:** Rahul Sharma (Age: 58) | **History:** Grade 3 Osteoarthritis | **Insurer:** Star Health")
+        
+        d_left, d_right = st.columns([1, 1], gap="large")
+        
+        with d_left:
+            st.markdown("#### Clinical Input")
+            mode = st.radio("Input Method", ["Voice-to-Text", "Manual Entry", "Scan Paper Notes"], horizontal=True)
             
-            # Input Modality Switcher
-            input_mode = st.radio("Select Input Modality:", ["🎙️ Voice Dictation", "⌨️ Manual Type", "📤 Delegate to Assistant"], horizontal=True)
-            
-            if input_mode == "🎙️ Voice Dictation":
-                if st.button("🔴 Start Recording Voice Note"):
-                    with st.spinner("Listening and Transcribing via Whisper AI..."):
+            if mode == "Voice-to-Text":
+                if st.button("🎙️ Start Transcription"):
+                    with st.spinner("AI Scribe Listening..."):
                         time.sleep(2)
-                        st.session_state.doc_voice_text = "Patient requires Total Knee Replacement (TKR). Planning to use Zimmer Biomet high-grade trabecular metal implant due to poor bone density. Prescribing standard pre-op blood panel."
+                        st.session_state.doc_notes = "Patient diagnosed with advanced arthritis. Prescribe Tab. Pan-D once daily for 10 days, Tab. Osteo-Plus twice daily for 30 days. Order MRI Right Knee and Blood CBC. Recommend Total Knee Replacement with Zimmer High-Grade Implant."
                         st.rerun()
-                notes = st.text_area("Transcribed Notes (Editable):", value=st.session_state.doc_voice_text, height=100)
             
-            elif input_mode == "⌨️ Manual Type":
-                notes = st.text_area("Clinical Notes:", placeholder="Type observation and treatment plan here...", height=100)
+            notes = st.text_area("Observations & Treatment Plan:", value=st.session_state.doc_notes, height=180)
+            
+            if st.button("✨ Process Encounter (AI Scribe)", type="primary", use_container_width=True):
+                st.session_state.ai_processed = True
+                st.rerun()
+
+        with d_right:
+            st.markdown("#### Agentic AI Extraction")
+            if st.session_state.ai_processed:
+                st.markdown("<div class='ai-box'>", unsafe_allow_html=True)
+                st.write("🤖 **Agent 1 (Scribe):** Structuring clinical data...")
                 
-            elif input_mode == "📤 Delegate to Assistant":
-                st.info("Upload physical OT notes or handwritten prescriptions. AI OCR will extract and structure it for you.")
-                st.file_uploader("Upload Handwritten File")
-                notes = ""
-
-            # Action Bar
-            st.markdown("**Clinical Actions:**")
-            actions = st.multiselect("Orders:", ["Prescribe Medications", "Order Lab Tests (Pre-Op Panel)", "Schedule Surgery (TKR)", "Assign to Physiotherapist"])
-
-            # --- THE MAGIC AGENTIC MOMENT ---
-            if st.button("💾 Save Encounter & Run AI Pre-Audit", type="primary"):
-                with st.spinner("🤖 Agent 2 (Strategist) cross-referencing notes with Star Health Policy..."):
-                    time.sleep(2)
-                    if "high-grade" in notes.lower() or "zimmer" in notes.lower():
-                        st.session_state.ai_justification_needed = True
-                    st.session_state.case_status_rahul = "Treatment Plan Finalized"
-                    st.rerun()
-
-            # Display the AI Guardrail Warning
-            if st.session_state.ai_justification_needed:
-                st.markdown("""
-                <div class='ai-alert'>
-                    <b>⚠️ AI Claims Strategist Warning:</b><br>
-                    You selected a "High-Grade Trabecular Implant". Under Star Health Policy Clause 4.2, high-grade implants are only payable with a clinical justification.<br><br>
-                    <i>Please provide a justification to prevent TPA query/delay:</i>
-                </div>
-                """, unsafe_allow_html=True)
-                justification = st.text_input("Clinical Justification:")
-                if st.button("Submit Justification & Finalize"):
-                    st.success("✅ Justification attached to Verified Dossier. TPA Approval expected in < 30 mins.")
-                    st.session_state.ai_justification_needed = False
-
-    # Patient 2 (Dummy for visual queue)
-    with st.expander("🟡 10:30 AM | Sunita Verma (Age: 45) | Status: Waiting for Doctor"):
-        st.write("Patient details go here...")
-
+                # Mock AI Extraction Tables
+                st.markdown("**💊 Prescriptions Identified:**")
+                meds_data = {
+                    "Medicine": ["Tab. Pan-D", "Tab. Osteo-Plus"],
+                    "Dosage": ["Once Daily", "Twice Daily"],
+                    "Duration": ["10 Days", "30 Days"]
+                }
+                st.table(pd.DataFrame(meds_data))
+                
+                st.markdown("**🔬 Lab Tests Ordered:**")
+                st.write("- MRI Right Knee\n- Blood CBC")
+                
+                st.markdown("**🚩 Insurance Guardrail (Agent 2):**")
+                if "zimmer" in notes.lower() or "high-grade" in notes.lower():
+                    st.warning("Zimmer High-Grade Implant detected. Pre-auth requires a clinical justification for this specific model.")
+                    justification = st.text_input("Enter Justification for Star Health:")
+                    if st.button("Sync to TPA & Patient Profile"):
+                        st.success("Case Updated! Patient and TPA have been notified.")
+                
+                st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.info("Awaiting clinical input to begin structuring data...")
 
 # ==========================================
-# ROUTER
+# MAIN ROUTER
 # ==========================================
 if st.session_state.logged_in_user == "Patient App (Rahul)":
-    st.write("Patient App UI is hidden. Switch to Patient Persona in sidebar.")
+    render_patient_app()
 elif st.session_state.logged_in_user == "Doctor Portal (Dr. Gupta)":
     render_doctor_app()
 else:
     st.title("🏢 TPA Dashboard")
-    st.write("Next persona UI coming soon...")
+    st.write("This persona will be built next to receive the AI Dossier.")
